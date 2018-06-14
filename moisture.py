@@ -29,19 +29,36 @@ from datetime import datetime
 def publishMessage(channel):
 	if GPIO.input(channel):
 		print "LED off"
+        if currentLEDValue == 'on':
+            global currentLEDValue
+            currentLEDValue = 'off'
+            myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
+            timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
+            message = {}
+            message['timestamp'] = timestamp
+            message['LED'] = currentLEDValue
+            #Publish to the topic
+            messageJson = json.dumps(message)
+            print (publishTopic)
+            print (messageJson)
+            myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
+            print('Published topic %s: %s\n' % (publishTopic, messageJson))
 	else:
 		print "LED on"
-        myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
-        timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
-        message = {}
-        message['timestamp'] = timestamp
-        message['LED'] = "on"
-        #Publish to the topic
-        messageJson = json.dumps(message)
-        print (publishTopic)
-        print (messageJson)
-        myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
-        print('Published topic %s: %s\n' % (publishTopic, messageJson))
+        if currentLEDValue == 'off':
+            global currentLEDValue
+            currentLEDValue = 'on'
+            myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
+            timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
+            message = {}
+            message['timestamp'] = timestamp
+            message['LED'] = currentLEDValue
+            #Publish to the topic
+            messageJson = json.dumps(message)
+            print (publishTopic)
+            print (messageJson)
+            myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
+            print('Published topic %s: %s\n' % (publishTopic, messageJson))
   
 def pubackCallback(self, mid):
     print("Received PUBACK packet id: ")
@@ -81,7 +98,8 @@ privateKeyPath = args.privateKeyPath
 publishTopic = args.publishTopic
 #subscribeTopic = args.subscribeTopic
 clientId = args.clientId
-
+global currentLEDValue
+currentLEDValue = 'on'
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
