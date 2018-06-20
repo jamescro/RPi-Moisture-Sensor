@@ -26,39 +26,33 @@ from datetime import datetime
 
 # Custom MQTT message callback
         
-def publishMessage(channel):
-	if GPIO.input(channel):
-		print "LED off"
-        if currentLEDValue == 'on':
-            global currentLEDValue
-            currentLEDValue = 'off'
-            myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
-            timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
-            message = {}
-            message['timestamp'] = timestamp
-            message['LED'] = currentLEDValue
-            #Publish to the topic
-            messageJson = json.dumps(message)
-            print (publishTopic)
-            print (messageJson)
-            myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
-            print('Published topic %s: %s\n' % (publishTopic, messageJson))
-	else:
-		print "LED on"
-        if currentLEDValue == 'off':
-            global currentLEDValue
-            currentLEDValue = 'on'
-            myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
-            timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
-            message = {}
-            message['timestamp'] = timestamp
-            message['LED'] = currentLEDValue
-            #Publish to the topic
-            messageJson = json.dumps(message)
-            print (publishTopic)
-            print (messageJson)
-            myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
-            print('Published topic %s: %s\n' % (publishTopic, messageJson))
+def toggleWater(channel):
+    if GPIO.input(channel):
+        print "LED on"
+        myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
+        timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
+        message = {}
+        message['timestamp'] = timestamp
+        message['LED'] = "on"
+        #Publish to the topic
+        messageJson = json.dumps(message)
+        print (publishTopic)
+        print (messageJson)
+        myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
+        print('Published topic %s: %s\n' % (publishTopic, messageJson))
+    else:
+        print "LED off"
+        myAWSIoTMQTTClient.connectAsync(ackCallback=conackCallback)
+        timestamp = datetime.now().strftime("%Y%m%d-%H:%M:%S")
+        message = {}
+        message['timestamp'] = timestamp
+        message['LED'] = "off"
+        #Publish to the topic
+        messageJson = json.dumps(message)
+        print (publishTopic)
+        print (messageJson)
+        myAWSIoTMQTTClient.publishAsync(publishTopic, str(messageJson), 1, pubackCallback)
+        print('Published topic %s: %s\n' % (publishTopic, messageJson))
   
 def pubackCallback(self, mid):
     print("Received PUBACK packet id: ")
@@ -98,8 +92,6 @@ privateKeyPath = args.privateKeyPath
 publishTopic = args.publishTopic
 #subscribeTopic = args.subscribeTopic
 clientId = args.clientId
-global currentLEDValue
-currentLEDValue = 'on'
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
@@ -131,9 +123,8 @@ channel = 17
 # Set the GPIO pin to an input
 GPIO.setup(channel, GPIO.IN)
 # This line tells our script to keep an eye on our gpio pin and let us know when the pin goes HIGH or LOW
-GPIO.add_event_detect(channel, GPIO.BOTH, bouncetime=300)
-# This line asigns a function to the GPIO pin so that when the above line tells us there is a change on the pin, run this function
-GPIO.add_event_callback(channel, publishMessage)
+GPIO.add_event_detect(channel, GPIO.BOTH, callback=toggleWater, bouncetime=300)
+
 
 try:
     while True:
@@ -141,6 +132,5 @@ try:
  
 except KeyboardInterrupt:
     print "exiting"
-    client.disconnect()
-    client.loop_stop()
+
 
